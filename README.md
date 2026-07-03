@@ -1,317 +1,124 @@
-# Парсер цін з інтернет-магазинів
+# OlXpArSeR
 
-Автоматизована система для збору цін з інтернет-магазинів з використанням асинхронних запитів та парсингу HTML.
+OlXpArSeR is an asynchronous OLX.ua price parser that collects product listings, normalizes core product fields, and exports results to JSON and Excel.
 
-## 🎯 Основні можливості
+The project is useful for price monitoring, catalogue research, and market analysis where the source website terms allow automated collection.
 
-Система збирає наступні дані про товари:
+## Features
 
-### ✅ Обов'язкові поля:
-- **Назва товару** - повна назва товару
-- **Поточна ціна** - актуальна вартість товару
-- **Посилання на товар** - URL сторінки товару
+- Async HTTP collection with configurable request limits and delays
+- OLX category discovery from a supplied base URL
+- Single-category or all-category parsing flow
+- Pagination support with a default safety limit
+- Product extraction for name, price, URL, availability, SKU, category, image, and metadata
+- JSON export for full and essential datasets
+- Excel export with formatted rows and clickable product links
+- Reusable parser base class for adding another target site
 
-### 🔍 Опціональні поля:
-- **Наявність товару** - чи є товар в наявності
-- **Артикул/код товару** - унікальний ідентифікатор товару
+## Tech Stack
 
-### 📊 Додаткові поля:
-- Категорія та підкатегорія
-- Бренд
-- Опис
-- Зображення
-- Рейтинг та кількість відгуків
-- Атрибути товару
+- Python 3.8+
+- aiohttp
+- BeautifulSoup4
+- lxml
+- openpyxl
+- asyncio
 
-### 📈 Формати експорту:
-- **JSON** - повні та основні дані
-- **Excel (.xlsx)** - структуровані дані з гіперпосиланнями
+## Repository Layout
 
-## 🚀 Технології
-
-- **Python 3.8+** - основна мова програмування
-- **aiohttp** - асинхронні HTTP запити
-- **BeautifulSoup4** - парсинг HTML/XML
-- **lxml** - швидкий XML/HTML парсер
-- **asyncio** - асинхронне програмування
-- **openpyxl** - робота з Excel файлами
-
-## 📦 Встановлення
-
-1. Клонуйте репозиторій:
-```bash
-git clone <repository-url>
-cd Parserpriceinsite
+```text
+.
+├── main.py
+├── base_parser.py
+├── olx_parser.py
+├── example_parser.py
+├── models.py
+├── config.py
+├── excel_exporter.py
+├── test_excel_exporter.py
+└── requirements.txt
 ```
 
-2. Встановіть залежності:
+## Installation
+
 ```bash
+git clone git@github.com:andriionopa/OlXpArSeR.git
+cd OlXpArSeR
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## 🎮 Використання
+## Usage
 
-### Excel Експорт
-
-Система автоматично створює Excel файли з наступними колонками:
-
-| Колонка | Опис | Приклад |
-|---------|------|---------|
-| **Назва товару** | Повна назва товару | "iPhone 14 Pro 128GB" |
-| **Ціна** | Поточна вартість | "45,999 грн" |
-| **Наявність** | Статус наявності | "✅ В наявності" |
-| **Посилання** | Гіперпосилання на товар | "Перейти до товару" |
-
-**Особливості Excel експорту:**
-- Автоматичне форматування заголовків
-- Гіперпосилання на товари (клікабельні)
-- Чергування кольорів рядків для кращої читабельності
-- Автоматична настройка ширини колонок
-- Назва файлу включає категорію та timestamp
-
-### Базовий запуск
+Run the interactive CLI:
 
 ```bash
 python main.py
 ```
 
-### Налаштування
+Then provide an OLX.ua URL when prompted. The tool displays discovered categories and lets you choose one category or parse all detected categories.
 
-1. **Введіть посилання на сайт** - URL головної сторінки інтернет-магазину
-2. **Виберіть режим парсингу**:
-   - Весь каталог - парсинг всіх доступних категорій
-   - Конкретні категорії - парсинг тільки вказаних категорій
+Generated files are written to the configured output directory, `parsed_data` by default:
 
-### Приклад використання
+- `*_full.json`
+- `*_essential.json`
+- Excel workbook with formatted product data
+
+## Configuration
+
+Parser defaults live in `config.py`.
+
+Important settings:
+
+- `base_url`: target OLX URL
+- `request_timeout`: request timeout in seconds
+- `max_concurrent_requests`: concurrent request limit
+- `delay_between_requests`: delay between requests
+- `categories_to_parse`: optional category filter
+- `parse_entire_catalog`: full catalogue mode
+- `output_directory`: export directory
+- `log_level` and `log_file`: logging controls
+
+Example:
 
 ```python
-from example_parser import ExamplePriceParser
 from config import ParserConfig
 
-# Налаштування конфігурації
 config = ParserConfig(
-    base_url="https://example-shop.com",
+    base_url="https://www.olx.ua/uk/",
     max_concurrent_requests=5,
-    delay_between_requests=1.0
-)
-
-# Створення та запуск парсера
-async with ExamplePriceParser(config) as parser:
-    result = await parser.parse_catalog()
-    
-    if result.success:
-        print(f"Знайдено {result.total_products} товарів")
-        for product in result.products:
-            print(f"{product.name}: {product.price} {product.currency}")
-```
-
-## 🏗️ Архітектура
-
-### Основні компоненти
-
-1. **BasePriceParser** - базовий клас з загальною логікою
-2. **OlxPriceParser** - спеціалізований парсер для OLX.ua
-3. **Product** - модель даних товару
-4. **Category** - модель даних категорії
-5. **ParserConfig** - конфігурація парсера
-6. **ExcelExporter** - експорт даних в Excel формат
-
-### Структура проекту
-
-```
-Parserpriceinsite/
-├── main.py              # Головний файл запуску
-├── excel_exporter.py    # Експорт в Excel формат
-├── models.py            # Моделі даних
-├── config.py            # Конфігурація
-├── requirements.txt     # Залежності
-└── README.md           # Документація
-```
-
-## ⚙️ Налаштування
-
-### Конфігурація парсера
-
-```python
-@dataclass
-class ParserConfig:
-    base_url: str                    # Базовий URL сайту
-    user_agent: str                  # User-Agent для запитів
-    request_timeout: int             # Таймаут запитів (сек)
-    max_concurrent_requests: int     # Максимум одночасних запитів
-    delay_between_requests: float    # Затримка між запитами (сек)
-    parse_entire_catalog: bool       # Парсити весь каталог
-    output_directory: str            # Директорія для результатів
-    save_format: str                 # Формат збереження (json/csv/xml)
-```
-
-### Налаштування логування
-
-```python
-config = ParserConfig(
-    log_level="INFO",        # DEBUG, INFO, WARNING, ERROR
-    log_file="parser.log"    # Файл для логів
+    delay_between_requests=1.5,
+    output_directory="parsed_data"
 )
 ```
 
-## 🔧 Створення власного парсера
+## Creating Another Parser
 
-Для створення парсера під конкретний сайт:
+Use `BasePriceParser` for shared HTTP, parsing, and utility behavior, then implement site-specific category and product extraction in a subclass.
 
-1. **Успадкуйте BasePriceParser**:
-```python
-class MyShopParser(BasePriceParser):
-    def __init__(self, config: ParserConfig):
-        super().__init__(config)
-    
-    async def get_categories(self) -> List[Category]:
-        # Ваша логіка отримання категорій
-        pass
-    
-    async def get_products_from_category(self, category: Category) -> List[Product]:
-        # Ваша логіка отримання товарів
-        pass
+Required methods:
+
+- `get_categories`
+- `get_products_from_category`
+
+Use `models.Product`, `models.Category`, and `models.ParsingResult` for consistent output.
+
+## Responsible Use
+
+- Check the target site's robots.txt and terms of service.
+- Keep delays and concurrency conservative.
+- Do not collect personal data unless you have a lawful basis and a clear retention policy.
+- Avoid running high-volume jobs from shared or production networks without monitoring.
+
+## Validation
+
+```bash
+python3 -m py_compile *.py
+python test_excel_exporter.py
+gitleaks detect --source . --no-banner
 ```
 
-2. **Реалізуйте методи парсингу** під структуру конкретного сайту
-3. **Налаштуйте селектори** для витягування даних
+## License
 
-## 📊 Формати виводу
-
-### JSON формат (основні дані)
-
-```json
-{
-  "success": true,
-  "products": [
-    {
-      "name": "iPhone 15 Pro",
-      "price": "45999",
-      "product_url": "https://shop.com/iphone-15-pro",
-      "availability": true,
-      "sku": "IP15P-256GB"
-    }
-  ],
-  "total_products": 1,
-  "parsing_time": 2.45
-}
-```
-
-### JSON формат (повні дані)
-
-```json
-{
-  "success": true,
-  "products": [
-    {
-      "name": "iPhone 15 Pro",
-      "price": "45999",
-      "currency": "UAH",
-      "category": "Смартфони",
-      "brand": "Apple",
-      "description": "Новий iPhone 15 Pro...",
-      "image_url": "https://shop.com/images/iphone15pro.jpg",
-      "rating": 4.8,
-      "review_count": 127,
-      "parsed_at": "2024-01-15T10:30:00"
-    }
-  ]
-}
-```
-
-## 🚨 Обмеження та рекомендації
-
-### Етичні аспекти
-- Дотримуйтесь robots.txt сайту
-- Не перевантажуйте сервер занадто швидкими запитами
-- Використовуйте затримки між запитами
-- Поважайте умови використання сайту
-
-### Технічні обмеження
-- Максимум одночасних запитів: 10 (за замовчуванням)
-- Мінімальна затримка між запитами: 1 секунда
-- Таймаут запиту: 30 секунд
-
-### Оптимізація продуктивності
-- Використовуйте асинхронні запити
-- Налаштуйте розмір пулу з'єднань
-- Кешуйте результати при можливості
-- Використовуйте селективний парсинг
-
-## 🐛 Вирішення проблем
-
-### Поширені помилки
-
-1. **Connection timeout** - збільшіть `request_timeout`
-2. **Too many requests** - збільшіть `delay_between_requests`
-3. **Parser errors** - перевірте селектори та структуру HTML
-
-### Діагностика
-
-```python
-# Увімкнення детального логування
-config = ParserConfig(log_level="DEBUG")
-
-# Перевірка доступності сайту
-async with ExamplePriceParser(config) as parser:
-    soup = await parser.fetch_page("https://example.com")
-    if soup:
-        print("Сайт доступний")
-    else:
-        print("Проблеми з доступом до сайту")
-```
-
-## 📈 Розширення функціональності
-
-### Можливі покращення
-
-- Підтримка проксі та ротації User-Agent
-- Експорт в CSV/Excel формати
-- База даних для зберігання результатів
-- Веб-інтерфейс для управління
-- Планувальник завдань
-- API для інтеграції з іншими системами
-
-### Інтеграція з базами даних
-
-```python
-# Приклад збереження в SQLite
-import sqlite3
-
-def save_to_database(products: List[Product]):
-    conn = sqlite3.connect('products.db')
-    cursor = conn.cursor()
-    
-    for product in products:
-        cursor.execute("""
-            INSERT INTO products (name, price, url, availability, sku)
-            VALUES (?, ?, ?, ?, ?)
-        """, (product.name, product.price, product.product_url, 
-              product.availability, product.sku))
-    
-    conn.commit()
-    conn.close()
-```
-
-## 📄 Ліцензія
-
-Цей проект розповсюджується під ліцензією MIT.
-
-## 🤝 Внесок
-
-Вітаються внески у вигляді:
-- Повідомлень про помилки
-- Запитів на нові функції
-- Покращень документації
-- Коду та тестів
-
-## 📞 Підтримка
-
-Для отримання допомоги:
-1. Перевірте документацію
-2. Пошукайте в існуючих issues
-3. Створіть нове issue з детальним описом проблеми
-
----
-
-**Примітка**: Цей парсер призначений тільки для освітніх та особистих цілей. Дотримуйтесь умов використання та законодавства при використанні.
+No license file is currently included. Add a license before distributing or accepting external contributions.
